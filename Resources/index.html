@@ -21,6 +21,38 @@ button{font:inherit;color:var(--fg);background:var(--btn);border:1px solid var(-
 #pad{display:grid;grid-template-columns:1fr 1fr 1fr 1.2fr 1.2fr;gap:8px;margin:8px;height:76px}
 #pad button{font-size:32px;padding:0;color:#fff;border:0;box-shadow:0 5px 0 rgba(0,0,0,.3);text-shadow:0 1px 2px rgba(0,0,0,.4)}#pad button:active{transform:translateY(4px);box-shadow:0 1px 0 rgba(0,0,0,.3)}#pad [data-a=l]{background:#3b82f6}#pad [data-a=d]{background:#22c55e}#pad [data-a=r]{background:#f59e0b}#pad [data-a=u]{background:#a855f7}#pad [data-a=h]{background:#ef4444}
 #gg{font-size:26px;padding:0 10px;border:0;background:#3a3d46}#gg.rdy{animation:pl .5s infinite alternate}@keyframes pl{to{transform:scale(1.18)}}#say{position:absolute;left:6px;top:6px;display:flex;align-items:center;gap:6px;pointer-events:none;opacity:0;transition:opacity .2s;z-index:3}#say span{background:#fff;color:#222;border-radius:14px;padding:5px 10px;font-weight:800;font-size:15px;box-shadow:0 2px 6px rgba(0,0,0,.4)}#boss{margin:4px 6px 0;padding:4px 8px;min-height:18px;border-radius:8px;font-size:13px;font-weight:800;color:#fff;border:1px solid #3a3d46;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#dexp button{padding:8px 20px}:root{--bg:#000!important;--fg:#eee!important;--panel:#15161a!important;--bd:#2a2d36!important;--btn:#31343c!important}html,body{background:#000}#ov .sm button{padding:8px 12px;font-size:13px}#ms{font-size:13px;font-weight:700;margin:0 6px;padding:5px 8px;min-height:18px;background:var(--panel);border:1px solid var(--bd);border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* iPhone bottom buttons: protect home indicator and never shrink the controls. */
+:root {
+  height: 100%;
+  height: 100dvh;
+  box-sizing: border-box;
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  overflow: hidden;
+}
+body { height: 100%; min-height: 0; box-sizing: border-box; }
+#top, #ms, #boss { flex-shrink: 0; }
+#wrap { flex: 1 1 0px; min-height: 0; overflow: hidden; }
+#pad {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  height: clamp(56px, 9dvh, 76px);
+  min-height: 56px;
+  margin: 6px 8px 8px;
+}
+#pad button {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+@media (max-height: 650px) {
+  #pad { height: 56px; margin: 4px 8px 6px; }
+  #top { margin: 4px; }
+}
 </style></head><body>
 <div id="top">
  <div class="box" style="flex:1">スコア<b id="sc" style="font-size:38px;line-height:1.1">0</b></div>
@@ -51,6 +83,9 @@ const SHAPES={
 const $=id=>document.getElementById(id);
 const cv=$('cv'),g=cv.getContext('2d'),nx=$('nx'),ng=nx.getContext('2d');
 cv.width=W*C;cv.height=H*C;function fit(){const p=$('wrap'),s=Math.min((p.clientWidth-6)/(W*C),(p.clientHeight-6)/(H*C)),st=$('stage');st.style.width=W*C*s+'px';st.style.height=H*C*s+'px'}addEventListener('resize',fit);
+if (typeof ResizeObserver !== 'undefined') new ResizeObserver(fit).observe($('wrap'));
+addEventListener('pageshow', fit);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', fit);
 let grid,cur,next,score,cleared,busy,over,running=false,acc=0,last=0,flash=[],best=0,chainT,gauge=0,mis=null,locks=0,mdone=0,lastLv=1;
 try{best=+localStorage.getItem('cb_best')||0}catch(e){}
 $('bs').textContent=best;let dex={c:{}};try{const d=JSON.parse(localStorage.getItem('cb_dex'));if(d&&d.c)dex=d}catch(e){}const tr={};CHARS.forEach(v=>tr[v]=tierOf(v));
