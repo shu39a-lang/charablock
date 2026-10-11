@@ -1,0 +1,78 @@
+workflows:
+  charablock-ios:
+    name: キャラブロック iOS
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+
+    integrations:
+      app_store_connect: codemagic7
+
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.shu39a.charablock
+      xcode: latest
+      vars:
+        XCODE_PROJECT: "CharaBlock.xcodeproj"
+        XCODE_SCHEME: "CharaBlock"
+        BUNDLE_ID: "com.shu39a.charablock"
+
+    scripts:
+      - name: Install XcodeGen
+        script: |
+          brew list xcodegen >/dev/null 2>&1 || brew install xcodegen
+
+      - name: Generate Xcode project
+        script: |
+          cd "$CM_BUILD_DIR"
+          xcodegen generate
+          test -d "$CM_BUILD_DIR/$XCODE_PROJECT"
+
+      - name: Check bundled game files
+        script: |
+          cd "$CM_BUILD_DIR"
+          test -s Resources/index.html
+          test -s Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png
+          test -s Sources/CharaBlock/Info.plist
+
+      - name: Set automatic build number
+        script: |
+          cd "$CM_BUILD_DIR"
+          AUTO_BUILD_NUMBER=$((${PROJECT_BUILD_NUMBER:-1} + 100))
+          echo "CharaBlock build: $AUTO_BUILD_NUMBER"
+          agvtool new-version -all "$AUTO_BUILD_NUMBER"
+
+      - name: Apply App Store signing profiles
+        script: |
+          xcode-project use-profiles --project "$CM_BUILD_DIR/$XCODE_PROJECT"
+
+      - name: Build signed IPA
+        script: |
+          xcode-project build-ipa \
+            --project "$CM_BUILD_DIR/$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+
+      - name: Verify distribution signing
+        script: |
+          set -e
+          IPA_PATH="$(find "$CM_BUILD_DIR/build/ios/ipa" -maxdepth 1 -name "*.ipa" -print -quit)"
+          test -n "$IPA_PATH"
+          mkdir -p /tmp/charablock-signature
+          unzip -q "$IPA_PATH" -d /tmp/charablock-signature
+          APP_PATH="$(find /tmp/charablock-signature/Payload -maxdepth 1 -name '*.app' -print -quit)"
+          test -n "$APP_PATH"
+          codesign --verify --deep --strict "$APP_PATH"
+          codesign -dv --verbose=4 "$APP_PATH" 2>&1 | tee /tmp/charablock-signature.txt
+          grep -Eq 'Authority=(Apple Distribution|iPhone Distribution)' /tmp/charablock-signature.txt
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - /tmp/charablock-signature.txt
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false

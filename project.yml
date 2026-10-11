@@ -1,0 +1,34 @@
+name: CharaBlock
+
+options:
+  bundleIdPrefix: com.shu39a
+  deploymentTarget:
+    iOS: "16.0"
+
+settings:
+  base:
+    SWIFT_VERSION: 5.0
+    VERSIONING_SYSTEM: apple-generic
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: "1.0"
+
+targets:
+  CharaBlock:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: Sources/CharaBlock
+      - path: Resources/index.html
+        buildPhase: resources
+      - path: Resources/Assets.xcassets
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.shu39a.charablock
+        PRODUCT_NAME: CharaBlock
+        INFOPLIST_FILE: Sources/CharaBlock/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1"
+        SUPPORTS_MACCATALYST: NO
+    scheme:
+      testTargets: []
